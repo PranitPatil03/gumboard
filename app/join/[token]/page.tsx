@@ -1,14 +1,17 @@
-import { auth } from "@/auth";
+import { auth } from "@/lib/auth";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { db } from "@/lib/db";
+import { headers } from "next/headers";
 
 async function joinOrganization(token: string) {
   "use server";
 
-  const session = await auth();
+  const session = await auth.api.getSession({
+        headers: await headers()
+    })
   if (!session?.user?.id || !session?.user?.email) {
     throw new Error("Not authenticated");
   }
@@ -139,15 +142,15 @@ async function autoCreateAccountAndJoin(token: string, formData: FormData) {
       });
     }
 
-    // Create a session for the user
+    // Create a session for the user using Better Auth's session creation
     const sessionToken = crypto.randomUUID();
     const expires = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 days
 
     await db.session.create({
       data: {
-        sessionToken,
+        token: sessionToken,
         userId: user.id,
-        expires,
+        expiresAt: expires,
       },
     });
 
@@ -171,7 +174,9 @@ interface JoinPageProps {
 }
 
 export default async function JoinPage({ params }: JoinPageProps) {
-  const session = await auth();
+  const session = await auth.api.getSession({
+        headers: await headers()
+  })
   const { token } = await params;
 
   if (!token) {

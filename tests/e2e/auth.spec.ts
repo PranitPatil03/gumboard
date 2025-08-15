@@ -167,22 +167,6 @@ test.describe("Authentication Flow", () => {
       });
     });
 
-    await page.route("**/api/auth/session", async (route) => {
-      await route.fulfill({
-        status: 200,
-        contentType: "application/json",
-        body: JSON.stringify({
-          user: {
-            id: "linked-user-id",
-            name: "Linked User",
-            email: testEmail,
-            image: "https://example.com/avatar.jpg",
-            providers: ["email", "google"],
-          },
-        }),
-      });
-    });
-
     await page.route("**/api/user", async (route) => {
       await route.fulfill({
         status: 200,
@@ -280,22 +264,6 @@ test.describe("Authentication Flow", () => {
         status: 200,
         contentType: "application/json",
         body: JSON.stringify({ url: "/dashboard" }),
-      });
-    });
-
-    await page.route("**/api/auth/session", async (route) => {
-      await route.fulfill({
-        status: 200,
-        contentType: "application/json",
-        body: JSON.stringify({
-          user: {
-            id: "linked-user-id",
-            name: "Linked User",
-            email: testEmail,
-            image: "https://avatars.githubusercontent.com/u/456?v=4",
-            providers: ["email", "github"],
-          },
-        }),
       });
     });
 

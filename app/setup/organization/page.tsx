@@ -1,4 +1,4 @@
-import { auth } from "@/auth";
+import { auth } from "@/lib/auth";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
@@ -14,7 +14,9 @@ async function createOrganization(orgName: string, teamEmails: string[]) {
   "use server";
 
   const baseUrl = getBaseUrl(await headers());
-  const session = await auth();
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
   if (!session?.user?.id) {
     throw new Error("Not authenticated");
   }
@@ -77,7 +79,9 @@ async function createOrganization(orgName: string, teamEmails: string[]) {
 }
 
 export default async function OrganizationSetup() {
-  const session = await auth();
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
 
   if (!session?.user) {
     redirect("/auth/signin");

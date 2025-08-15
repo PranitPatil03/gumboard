@@ -16,9 +16,9 @@ const schema = z.object({
   GITHUB_CLIENT_ID: z.string().optional(),
   GITHUB_CLIENT_SECRET: z.string().optional(),
 
-  // NextAuth
-  AUTH_URL: z.string().optional(),
-  AUTH_SECRET: z.string(),
+  // Better Auth
+  BETTER_AUTH_SECRET: z.string(),
+  BETTER_AUTH_URL: z.string()
 });
 
 export const env = schema.parse(process.env);

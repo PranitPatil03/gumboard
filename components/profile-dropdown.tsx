@@ -1,4 +1,4 @@
-import { signOut } from "next-auth/react";
+import { authClient } from "@/lib/auth-client";
 import Link from "next/link";
 
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -11,7 +11,7 @@ type Props = {
 
 export function ProfileDropdown({ user }: Props) {
   const handleSignOut = async () => {
-    await signOut();
+    await authClient.signOut();
   };
   return (
     <Popover>

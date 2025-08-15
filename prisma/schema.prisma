@@ -15,85 +15,100 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// NextAuth.js required models
-model Account {
-  id                String  @id @default(cuid())
-  userId            String
-  type              String
-  provider          String
-  providerAccountId String
-  refresh_token     String? @db.Text
-  access_token      String? @db.Text
-  expires_at        Int?
-  token_type        String?
-  scope             String?
-  id_token          String? @db.Text
-  session_state     String?
+// Better Auth required models
+model User {
+  id                      String                        @id @default(cuid())
+  name                    String?
+  email                   String                        @unique
+  emailVerified           Boolean                       @default(false)
+  image                   String?
+  createdAt               DateTime                      @default(now())
+  updatedAt               DateTime                      @updatedAt
+  organizationId          String?
+  isAdmin                 Boolean                       @default(false) // Admin role for organization
+  organization            Organization?                 @relation(fields: [organizationId], references: [id])
+  invitedOrganizations    OrganizationInvite[]
+  createdSelfServeInvites OrganizationSelfServeInvite[]
+  notes                   Note[]
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sessions Session[]
+  accounts Account[]
 
-  @@unique([provider, providerAccountId])
-  @@map("accounts")
+  @@index([organizationId], name: "idx_user_org")
+  @@map("user")
 }
 
 model Session {
-  id           String   @id @default(cuid())
-  sessionToken String   @unique
-  userId       String
-  expires      DateTime
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id        String   @id @default(cuid())
+  userId    String
+  expiresAt DateTime
+  token     String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ipAddress String?
+  userAgent String?
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@map("sessions")
+  @@map("session")
 }
 
-// Updated User model for NextAuth compatibility
-model User {
-  id             String       @id @default(cuid())
-  name           String?
-  email          String       @unique
-  emailVerified  DateTime?
-  image          String?
-  accounts       Account[]
-  sessions       Session[]
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
-  organizationId String?
-  isAdmin        Boolean      @default(false) // Admin role for organization
-  organization   Organization? @relation(fields: [organizationId], references: [id])
-  invitedOrganizations OrganizationInvite[]
-  createdSelfServeInvites OrganizationSelfServeInvite[]
-  notes          Note[]
+model Account {
+  id                    String    @id @default(cuid())
+  userId                String
+  accountId             String
+  providerId            String
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@index([organizationId], name: "idx_user_org")
-  @@map("users")
+  @@unique([providerId, accountId])
+  @@map("account")
+}
+
+model Verification {
+  id         String    @id @default(cuid())
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime? @default(now())
+  updatedAt  DateTime? @updatedAt
+
+  @@map("verification")
 }
 
 model Organization {
-  id        String   @id @default(cuid())
-  name      String
-  slackWebhookUrl String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  members   User[]
-  invites   OrganizationInvite[]
-  boards    Board[]
+  id               String                        @id @default(cuid())
+  name             String
+  slackWebhookUrl  String?
+  createdAt        DateTime                      @default(now())
+  updatedAt        DateTime                      @updatedAt
+  members          User[]
+  invites          OrganizationInvite[]
+  boards           Board[]
   selfServeInvites OrganizationSelfServeInvite[]
 
   @@map("organizations")
 }
 
 model Board {
-  id             String       @id @default(cuid())
-  name           String
-  description    String?
-  isPublic       Boolean      @default(false)
-  sendSlackUpdates Boolean    @default(true)
-  organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  createdBy      String
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
-  notes          Note[]
+  id               String       @id @default(cuid())
+  name             String
+  description      String?
+  isPublic         Boolean      @default(false)
+  sendSlackUpdates Boolean      @default(true)
+  organizationId   String
+  organization     Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdBy        String
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+  notes            Note[]
 
   // Performance indexes
   @@index([organizationId, createdAt], name: "idx_board_org_created")
@@ -101,18 +116,18 @@ model Board {
 }
 
 model Note {
-  id        String @id @default(cuid())
-  color     String @default("#fef3c7") // Default yellow color
+  id             String          @id @default(cuid())
+  color          String          @default("#fef3c7") // Default yellow color
   checklistItems ChecklistItem[]
   archivedAt     DateTime? // Track archived status
   slackMessageId String?
-  boardId   String
-  board     Board  @relation(fields: [boardId], references: [id], onDelete: Cascade)
-  createdBy String
-  user      User   @relation(fields: [createdBy], references: [id], onDelete: Cascade)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  deletedAt DateTime? // Soft delete timestamp
+  boardId        String
+  board          Board           @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  createdBy      String
+  user           User            @relation(fields: [createdBy], references: [id], onDelete: Cascade)
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  deletedAt      DateTime? // Soft delete timestamp
 
   // Performance indexes
   @@index([boardId, deletedAt], name: "idx_note_board_deleted")
@@ -132,9 +147,9 @@ model ChecklistItem {
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
-  @@map("checklist_items")
   @@index([noteId])
   @@index([noteId, order])
+  @@map("checklist_items")
 }
 
 model OrganizationInvite {
@@ -154,14 +169,14 @@ model OrganizationInvite {
 model OrganizationSelfServeInvite {
   id             String       @id @default(cuid())
   token          String?      @unique // Cryptographically secure token for the URL
-  name           String       // Name/description for the invite link
+  name           String // Name/description for the invite link
   organizationId String
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   createdBy      String
   user           User         @relation(fields: [createdBy], references: [id])
   createdAt      DateTime     @default(now())
-  expiresAt      DateTime?    // Optional expiration date
-  usageLimit     Int?         // Optional usage limit
+  expiresAt      DateTime? // Optional expiration date
+  usageLimit     Int? // Optional usage limit
   usageCount     Int          @default(0) // Track how many times it's been used
   isActive       Boolean      @default(true)
 
@@ -172,13 +187,4 @@ enum InviteStatus {
   PENDING
   ACCEPTED
   DECLINED
-}
-
-model VerificationToken {
-  identifier String
-  token      String   @unique
-  expires    DateTime
-
-  @@unique([identifier, token])
-  @@map("verificationtokens")
 }

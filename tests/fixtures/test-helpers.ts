@@ -235,7 +235,7 @@ export const test = base.extend<{
 
     await page.context().addCookies([
       {
-        name: "authjs.session-token",
+        name: "better-auth.session-token",
         value: testContext.sessionToken,
         domain: "localhost",
         path: "/",

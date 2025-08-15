@@ -1,13 +1,16 @@
-import { auth } from "@/auth";
+import { auth } from "@/lib/auth";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
+import { headers } from "next/headers";
 
 async function acceptInvite(token: string) {
   "use server";
 
-  const session = await auth();
+  const session = await auth.api.getSession({
+        headers: await headers()
+  })
   if (!session?.user?.email) {
     throw new Error("Not authenticated");
   }
@@ -48,7 +51,9 @@ async function acceptInvite(token: string) {
 async function declineInvite(token: string) {
   "use server";
 
-  const session = await auth();
+  const session = await auth.api.getSession({
+        headers: await headers()
+  })
   if (!session?.user?.email) {
     throw new Error("Not authenticated");
   }
@@ -100,15 +105,15 @@ async function autoVerifyAndCreateSession(email: string, token: string) {
       });
     }
 
-    // Create a session for the user
+    // Create a session for the user using Better Auth's session creation
     const sessionToken = crypto.randomUUID();
     const expires = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 days
 
     await db.session.create({
       data: {
-        sessionToken,
+        token: sessionToken,
         userId: user.id,
-        expires,
+        expiresAt: expires,
       },
     });
 
@@ -133,7 +138,9 @@ interface InviteAcceptPageProps {
 }
 
 export default async function InviteAcceptPage({ searchParams }: InviteAcceptPageProps) {
-  const session = await auth();
+  const session = await auth.api.getSession({
+        headers: await headers()
+  })
   const resolvedSearchParams = await searchParams;
   const token = resolvedSearchParams.token;
   const isJustVerified = resolvedSearchParams.verified === "true";

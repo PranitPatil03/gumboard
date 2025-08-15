@@ -1,15 +1,18 @@
-import { auth } from "@/auth";
+import { auth } from "@/lib/auth";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
+import { headers } from "next/headers";
 
 async function updateUserName(formData: FormData) {
   "use server";
 
-  const session = await auth();
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
   if (!session?.user?.id) {
     throw new Error("Not authenticated");
   }
@@ -38,7 +41,9 @@ async function updateUserName(formData: FormData) {
 }
 
 export default async function ProfileSetup() {
-  const session = await auth();
+  const session = await auth.api.getSession({
+        headers: await headers()
+  });
 
   if (!session?.user) {
     redirect("/auth/signin");
